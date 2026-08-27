@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro de Reserva</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <h1>Registrar Datos de Reserva</h1>
+        <nav>
+            <ul>
+                <li><a href="asignacion.html">Volver a Asignación</a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <section class="formulario-accion">
+            <h2>Información del Huésped (Habitación Seleccionada)</h2>
+            <!-- El onsubmit lanza la notificación de éxito -->
+            <form action="dashboard.html" method="GET" onsubmit="alert('¡Reserva registrada con éxito! La habitación ya no aparecerá como disponible.');">
+                <fieldset>
+                    <legend>Datos Personales</legend>
+                    <div class="grupo-control">
+                        <label for="nombre_representante">Nombre del Representante</label>
+                        <input type="text" id="nombre_representante" name="nombre_representante" required>
+                    </div>
+
+                    <div class="grupo-control">
+                        <label for="doc_identidad">Documento de Identidad</label>
+                        <input type="text" id="doc_identidad" name="doc_identidad" required>
+                    </div>
+                </fieldset>
+
+                <fieldset>
+                    <legend>Servicios y Observaciones (Chef)</legend>
+                    <div class="grupo-control">
+                        <label for="observaciones_chef">Alergias o requerimientos especiales</label>
+                        <textarea id="observaciones_chef" name="observaciones_chef" rows="3"></textarea>
+                    </div>
+                </fieldset>
+
+                <div class="acciones-formulario">
+                    <button type="submit" class="btn-principal">Confirmar Reserva</button>
+                </div>
+            </form>
+        </section>
+    </main>
+    <footer>
+        <p>Grupo 2 - Ingeniería Web 2026</p>
+    </footer>
+</body>
+</html>

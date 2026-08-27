@@ -1,0 +1,227 @@
+/* Reset básico para evitar scrolls innecesarios */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+}
+
+body {
+    background-color: #f4f7f6;
+    color: #333;
+    line-height: 1.6;
+    padding: 15px;
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+/* REQUISITO: Foco de teclado identificable (Accesibilidad) */
+a:focus, button:focus, input:focus, textarea:focus {
+    outline: 3px solid #e67e22;
+    outline-offset: 2px;
+}
+
+/* Tipografía y encabezados */
+h1 {
+    color: #2c3e50;
+    font-size: 1.5rem;
+    margin-bottom: 10px;
+}
+
+h2 {
+    color: #34495e;
+    font-size: 1.2rem;
+    margin-bottom: 15px;
+}
+
+header {
+    background-color: #fff;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    border-left: 5px solid #2980b9;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+nav ul {
+    list-style: none;
+    margin-top: 10px;
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+nav a {
+    color: #2980b9;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+nav a.activo {
+    color: #e67e22;
+    text-decoration: underline;
+}
+
+/* Contenedores y Tarjetas */
+.contenedor-centrado {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 60vh;
+}
+
+.tarjeta-login, .formulario-accion {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    width: 100%;
+    max-width: 400px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    margin: 0 auto;
+}
+
+.tarjeta-habitacion {
+    background-color: #fff;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    border-left: 5px solid #2ecc71;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.resumen-dashboard {
+    background-color: #e8f4f8;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    border-left: 5px solid #3498db;
+}
+
+/* Formularios */
+.grupo-control {
+    margin-bottom: 15px;
+}
+
+label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+fieldset {
+    border: 1px solid #ccc;
+    padding: 15px;
+    margin-bottom: 15px;
+    border-radius: 5px;
+}
+
+legend {
+    font-weight: bold;
+    color: #2c3e50;
+    padding: 0 5px;
+}
+
+input[type="text"],
+input[type="password"],
+textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.acciones-formulario {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.enlace-secundario {
+    color: #7f8c8d;
+    font-size: 0.9rem;
+    text-align: center;
+}
+
+/* Botones */
+.btn-principal, .btn-secundario {
+    display: inline-block;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 4px;
+    text-align: center;
+    text-decoration: none;
+    font-weight: bold;
+    cursor: pointer;
+    width: 100%;
+}
+
+.btn-principal {
+    background-color: #2980b9;
+    color: #fff;
+}
+
+.btn-principal:hover {
+    background-color: #1c5980;
+}
+
+.btn-secundario {
+    background-color: #bdc3c7;
+    color: #2c3e50;
+    margin-top: 10px;
+}
+
+/* Tablas */
+.tabla-contenedor {
+    overflow-x: auto; /* Evita scroll en toda la página, solo en la tabla */
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+    min-width: 350px;
+}
+
+th, td {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+th {
+    background-color: #f8f9fa;
+}
+
+footer {
+    text-align: center;
+    margin-top: 30px;
+    font-size: 0.8rem;
+    color: #7f8c8d;
+}
+
+/* REQUISITO: Adaptación a Escritorio (Desktop) */
+@media (min-width: 600px) {
+    .acciones-formulario {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .btn-principal, .btn-secundario {
+        width: auto;
+        margin-top: 0;
+    }
+
+    .acciones-rapidas {
+        display: flex;
+        gap: 15px;
+    }
+
+    .listado-opciones {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+    }
+}

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estado de Habitaciones</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <h1>Control General de Habitaciones</h1>
+        <nav>
+            <ul>
+                <li><a href="dashboard.html">Volver al Dashboard</a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <!-- Sección de Habitaciones Ocupadas -->
+        <section class="tabla-contenedor" style="margin-bottom: 30px;">
+            <h2 style="color: #27ae60;">Habitaciones Ocupadas (2)</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Habitación</th>
+                        <th>Huésped</th>
+                        <th>Check-out previsto</th>
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>104</td>
+                        <td>Familia Pérez</td>
+                        <td>Mañana, 10:00 AM</td>
+                        <td><a href="#" class="btn-secundario" onclick="alert('Visualizando el perfil y consumos de la Familia Pérez...'); return false;">Ver Detalles</a></td>
+                    </tr>
+                    <tr>
+                        <td>105</td>
+                        <td>Carlos Mendoza</td>
+                        <td>Hoy, 12:00 PM</td>
+                        <td><a href="#" class="btn-secundario" onclick="alert('Se ha enviado una notificación de Check-out a Recepción.'); return false;">Solicitar Check-out</a></td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Sección de Limpieza y Mantenimiento -->
+        <section class="tabla-contenedor">
+            <h2 style="color: #c0392b;">En Limpieza / Mantenimiento (2)</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Habitación</th>
+                        <th>Estado Actual</th>
+                        <th>Prioridad</th>
+                        <th>Acción Operativa</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>103</td>
+                        <td>Sucia (Post Check-out)</td>
+                        <td>Alta</td>
+                        <td><a href="#" class="btn-principal" onclick="alert('¡Notificación enviada al equipo de Housekeeping! Tienen 30 minutos para la limpieza.'); return false;">Enviar a Limpiar</a></td>
+                    </tr>
+                    <tr>
+                        <td>205</td>
+                        <td>Aire Acondicionado averiado</td>
+                        <td>Media</td>
+                        <td><a href="#" class="btn-secundario" onclick="alert('Ticket generado y enviado al técnico de Mantenimiento.'); return false;">Notificar Mantenimiento</a></td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+    </main>
+    <footer>
+        <p>Grupo 2 - Ingeniería Web 2026</p>
+    </footer>
+</body>
+</html>
