@@ -3,11 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0b192c">
+    <link rel="manifest" href="{{ asset('manifest.webmanifest') }}">
+    <link rel="icon" href="{{ asset('icons/luxstay.svg') }}" type="image/svg+xml">
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
     <title>Iniciar Sesión - LuxStay PMS</title>
-    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="min-h-screen flex items-center justify-center bg-cover bg-center relative"
-      style="background-image: url('https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1920&q=80');">
+<body class="relative flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-950 via-slate-900 to-blue-950">
     
     <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"></div>
 

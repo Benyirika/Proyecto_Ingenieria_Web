@@ -4,27 +4,32 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth; // <-- 1. Importar la fachada Auth
 use Symfony\Component\HttpFoundation\Response;
 
 class RoleMiddleware
 {
-    public function handle(Request $request, Closure $next, ...$roles): Response
+    public function handle(Request $request, Closure $next, string ...$roles): Response
     {
-        // 2. Usar Auth::check()
-        if (!Auth::check()) {
+        $user = $request->user();
+
+        if ($user === null) {
             return redirect()->route('login');
         }
 
-        // 3. Usar Auth::user()
-        $userRole = Auth::user()->role;
+        if (! $user->is_active) {
+            auth()->logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
 
-        // El Master Admin siempre tiene acceso total, o verificamos si el rol está permitido
-        if ($userRole === 'admin' || in_array($userRole, $roles)) {
+            return redirect()->route('login')->withErrors([
+                'email' => 'La cuenta está inactiva. Contacta a administración.',
+            ]);
+        }
+
+        if ($user->isAdmin() || in_array($user->role, $roles, true)) {
             return $next($request);
         }
 
-        // Caso de error controlado para la sustentación (Acceso no autorizado)
-        abort(403, 'ACCESO RESTRINGIDO: Tu rol (' . strtoupper($userRole) . ') no tiene privilegios para acceder a este módulo operativo.');
+        abort(403, 'Tu rol no tiene permiso para esta operación.');
     }
 }

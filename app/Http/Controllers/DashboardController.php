@@ -3,46 +3,81 @@
 namespace App\Http\Controllers;
 
 use App\Models\Branch;
+use App\Models\Payment;
 use App\Models\Reservation;
 use App\Models\Room;
+use App\Models\User;
+use App\Services\ReservationAnalytics;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
-    public function index(Request $request)
+    public function index(Request $request, ReservationAnalytics $analytics): View
     {
-        /** @var \App\Models\User $user */
-        $user = Auth::user();
+        /** @var User $user */
+        $user = $request->user();
+        Gate::authorize('viewAny', Reservation::class);
 
-        // Solo el Master Admin puede ver las 3 sucursales o filtrar entre ellas
-        $branches = $user->isAdmin() ? Branch::withCount('rooms')->get() : collect([$user->branch]);
-
-        // Determinar qué sucursal estamos visualizando
+        $filters = $request->validate([
+            'branch_id' => ['nullable', 'integer', 'exists:branches,id'],
+            'from' => ['nullable', 'date'],
+            'to' => ['nullable', 'date', 'after_or_equal:from'],
+        ]);
+        $branches = $user->isAdmin()
+            ? Branch::query()->where('is_active', true)->orderBy('name')->get()
+            : collect([$user->branch]);
         $selectedBranchId = $user->isAdmin()
-            ? $request->query('branch_id') // null = Vista Consolidada de los 3 locales
-            : $user->branch_id;            // Fijo para Recepción
+            ? (isset($filters['branch_id']) ? (int) $filters['branch_id'] : null)
+            : (int) $user->branch_id;
+        $from = $filters['from'] ?? today()->startOfMonth()->toDateString();
+        $to = $filters['to'] ?? today()->toDateString();
 
-        $roomsQuery = Room::with(['branch', 'category', 'cleaner', 'reservations']);
-        $reservationsQuery = Reservation::with(['branch', 'room.category', 'user'])->where('status', 'activa');
+        $rooms = Room::query()
+            ->with(['branch', 'category', 'currentStay.reservation.primaryGuest'])
+            ->when($selectedBranchId !== null, fn ($query) => $query->where('branch_id', $selectedBranchId))
+            ->orderBy('branch_id')
+            ->orderBy('number')
+            ->get();
 
-        if ($selectedBranchId) {
-            $roomsQuery->where('branch_id', $selectedBranchId);
-            $reservationsQuery->where('branch_id', $selectedBranchId);
-        }
+        $reservations = Reservation::query()
+            ->with([
+                'branch',
+                'primaryGuest',
+                'roomRequests.category',
+                'roomStays' => fn ($query) => $query->whereNull('ended_at')->with('room'),
+                'payments',
+            ])
+            ->whereIn('booking_status', ['pre_reserva', 'confirmada', 'check_in'])
+            ->when($selectedBranchId !== null, fn ($query) => $query->where('branch_id', $selectedBranchId))
+            ->orderBy('check_in')
+            ->orderBy('id')
+            ->get();
 
-        $rooms = $roomsQuery->orderBy('branch_id')->orderBy('number')->get();
-        $reservations = $reservationsQuery->latest()->get();
+        $pendingPayments = Payment::query()
+            ->with(['reservation.branch', 'reservation.primaryGuest'])
+            ->where('status', 'pendiente')
+            ->whereHas('reservation', fn ($query) => $query->when($selectedBranchId !== null, fn ($reservationQuery) => $reservationQuery->where('branch_id', $selectedBranchId)))
+            ->orderBy('created_at')
+            ->get();
 
-        // KPIs en tiempo real desde la Base de Datos
-        $stats = [
-            'total_rooms' => $rooms->count(),
-            'available_clean' => $rooms->where('status', 'disponible')->where('cleaning_status', 'limpia')->count(),
-            'occupied' => $rooms->where('status', 'ocupada')->count(),
-            'dirty_or_process' => $rooms->whereIn('cleaning_status', ['sucia', 'en_proceso'])->count(),
-            'revenue_active' => $reservations->sum('total_price'),
-        ];
+        $charts = $user->isAdmin() ? [
+            'revenue' => $analytics->revenueByBranch($from, $to, $selectedBranchId),
+            'roomCategories' => $analytics->roomCategoriesByBranch($from, $to, $selectedBranchId),
+            'extraServices' => $analytics->extraServices($from, $to, $selectedBranchId),
+        ] : [];
 
-        return view('dashboard.index', compact('branches', 'selectedBranchId', 'rooms', 'reservations', 'stats'));
+        return view('dashboard.index', [
+            'branches' => $branches,
+            'selectedBranchId' => $selectedBranchId,
+            'rooms' => $rooms,
+            'reservations' => $reservations,
+            'pendingPayments' => $pendingPayments,
+            'stats' => $analytics->operatingTotals($selectedBranchId),
+            'charts' => $charts,
+            'from' => $from,
+            'to' => $to,
+        ]);
     }
 }

@@ -2,90 +2,64 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StorePreReservationRequest;
+use App\Models\Branch;
+use App\Models\ExtraService;
 use App\Models\Reservation;
-use App\Models\Room;
-use Carbon\Carbon;
+use App\Models\User;
+use App\Services\BookingService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\View\View;
 
 class ReservationController extends Controller
 {
-    public function create(Request $request)
+    public function create(Request $request, BookingService $bookings): View
     {
-        /** @var \App\Models\User $user */
-        $user = Auth::user();
+        /** @var User $user */
+        $user = $request->user();
+        Gate::authorize('create', Reservation::class);
 
-        $roomsQuery = Room::with(['branch', 'category'])
-            ->where('status', 'disponible')
-            ->where('cleaning_status', 'limpia');
-
-        if (!$user->isAdmin()) {
-            $roomsQuery->where('branch_id', $user->branch_id);
-        } elseif ($request->filled('branch_id')) {
-            $roomsQuery->where('branch_id', $request->branch_id);
+        $branches = $user->isAdmin()
+            ? Branch::query()->where('is_active', true)->orderBy('name')->get()
+            : collect([$user->branch]);
+        $selectedBranchId = $user->isAdmin()
+            ? (int) request('branch_id', $branches->first()?->id)
+            : (int) $user->branch_id;
+        $dates = $request->validate([
+            'branch_id' => ['nullable', 'integer', 'exists:branches,id'],
+            'check_in' => ['nullable', 'date', 'after_or_equal:today'],
+            'check_out' => ['nullable', 'date', 'after:check_in'],
+        ]);
+        if ($user->isAdmin() && $selectedBranchId > 0) {
+            $selectedBranchId = (int) Branch::query()->where('is_active', true)->findOrFail($selectedBranchId)->id;
         }
+        $checkIn = $dates['check_in'] ?? today()->toDateString();
+        $checkOut = $dates['check_out'] ?? today()->addDay()->toDateString();
+        $inventory = $selectedBranchId
+            ? $bookings->availableInventory($selectedBranchId, $checkIn, $checkOut)
+            : collect();
 
-        $availableRooms = $roomsQuery->get();
-
-        return view('reservations.create', compact('availableRooms'));
+        return view('reservations.create', [
+            'branches' => $branches,
+            'selectedBranchId' => $selectedBranchId,
+            'inventory' => $inventory,
+            'extraServices' => ExtraService::query()->where('is_active', true)->orderBy('name')->get(),
+            'checkIn' => $checkIn,
+            'checkOut' => $checkOut,
+            'formAction' => route('reservations.store'),
+            'isPublic' => false,
+        ]);
     }
 
-    public function store(Request $request)
+    public function store(StorePreReservationRequest $request, BookingService $bookings): RedirectResponse
     {
-        $validated = $request->validate([
-            'room_id' => ['required', 'exists:rooms,id'],
-            'guest_name' => ['required', 'string', 'min:3', 'max:120'],
-            'guest_dni' => ['required', 'digits:8'],
-            'check_in' => ['required', 'date', 'after_or_equal:today'],
-            'check_out' => ['required', 'date', 'after:check_in'],
-        ], [
-            'room_id.required' => 'Seleccione una habitación habilitada.',
-            'guest_name.required' => 'El nombre completo del huésped es obligatorio.',
-            'guest_dni.digits' => 'El DNI debe contener exactamente 8 dígitos numéricos.',
-            'check_in.after_or_equal' => 'La fecha de Check-in no puede estar en el pasado.',
-            'check_out.after' => 'La fecha de Check-out debe ser posterior al Check-in.',
-        ]);
+        Gate::authorize('create', Reservation::class);
 
-        $room = Room::with('category')->findOrFail($validated['room_id']);
+        $reservation = $bookings->createReservation($request->validated(), $request->user(), 'confirmada');
 
-        // Seguridad extra de negocio
-        if ($room->status !== 'disponible' || $room->cleaning_status !== 'limpia') {
-            return back()->withErrors(['room_id' => 'La habitación seleccionada no está limpia o disponible para Check-in.'])->withInput();
-        }
-
-        $days = max(1, Carbon::parse($validated['check_in'])->diffInDays(Carbon::parse($validated['check_out'])));
-        $totalPrice = $days * $room->category->base_price;
-
-        Reservation::create([
-            'branch_id' => $room->branch_id,
-            'room_id' => $room->id,
-            'user_id' => Auth::id(), // Usando Auth fachada para evitar errores de IDE
-            'guest_name' => $validated['guest_name'],
-            'guest_dni' => $validated['guest_dni'],
-            'check_in' => $validated['check_in'],
-            'check_out' => $validated['check_out'],
-            'total_price' => $totalPrice,
-            'status' => 'activa',
-        ]);
-
-        $room->update(['status' => 'ocupada']);
-
-        return redirect()->route('dashboard', ['branch_id' => $room->branch_id])
-            ->with('success', "¡Check-in registrado con éxito! Habitación #{$room->number} asignada a {$validated['guest_name']} (Total: S/ " . number_format($totalPrice, 2) . ").");
-    }
-
-    public function checkout(Reservation $reservation)
-    {
-        $reservation->update(['status' => 'finalizada']);
-
-        // Al hacer Check-out, la habitación pasa automáticamente a disponible pero SUCIA y prioridad URGENTE para Limpieza
-        $reservation->room->update([
-            'status' => 'disponible',
-            'cleaning_status' => 'sucia',
-            'priority' => 'urgente',
-            'cleaning_notes' => 'Check-out recién realizado por recepción. Requiere limpieza integral y reposición de blancos.',
-        ]);
-
-        return back()->with('success', "Check-out procesado. La Habitación #{$reservation->room->number} fue enviada a la cola de Housekeeping como SUCIA (Prioridad Urgente).");
+        return redirect()->route('dashboard', ['branch_id' => $reservation->branch_id])
+            ->with('success', 'Reserva '.$reservation->public_reference.' confirmada. Registre el pago y realice el check-in al llegar el huésped.');
     }
 }

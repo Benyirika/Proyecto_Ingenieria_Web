@@ -1,0 +1,19 @@
+{
+    "name": "LuxStay PMS",
+    "short_name": "LuxStay",
+    "description": "Portal y operaciones del hotel LuxStay",
+    "lang": "es",
+    "start_url": "/login?source=pwa",
+    "scope": "/",
+    "display": "standalone",
+    "background_color": "#f8fafc",
+    "theme_color": "#0b192c",
+    "icons": [
+        {
+            "src": "/icons/luxstay.svg",
+            "sizes": "any",
+            "type": "image/svg+xml",
+            "purpose": "any"
+        }
+    ]
+}

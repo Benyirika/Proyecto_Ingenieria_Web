@@ -42,9 +42,10 @@ return new class extends Migration
             $table->string('number', 10); // Ej. 101, 102... 305
             $table->integer('floor');
             $table->enum('status', ['disponible', 'ocupada', 'mantenimiento', 'no_show'])->default('disponible');
-            
-            // Housekeeping simplificado (Sucia / Limpia) + Reporte de Averías con Alerta Máxima
-            $table->enum('cleaning_status', ['limpia', 'sucia'])->default('limpia');
+
+            // Housekeeping con prioridad + estados operativos reales
+            $table->enum('cleaning_status', ['limpia', 'sucia', 'en_proceso'])->default('limpia');
+            $table->string('priority')->nullable()->default('normal');
             $table->text('cleaning_notes')->nullable();
             $table->boolean('has_maintenance_alert')->default(false); // Alerta máxima para recepción
             $table->text('maintenance_incident')->nullable(); // Manchas, olores, destrozos
@@ -69,7 +70,7 @@ return new class extends Migration
             $table->decimal('total_price', 10, 2);
             $table->string('currency', 5)->default('PEN'); // PEN, USD, EUR
             $table->decimal('exchange_rate_applied', 8, 2)->default(1.00);
-            
+
             // Estados y Motivos de Finalización
             $table->enum('status', ['activa', 'finalizada', 'cancelada', 'no_show'])->default('activa');
             $table->string('checkout_reason')->nullable(); // 'normal', 'urgencia_emergencia'

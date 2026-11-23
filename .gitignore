@@ -25,3 +25,8 @@ _ide_helper.php
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Configuracion local de agentes
+.claude/
+.mcp.json
+boost.json

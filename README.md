@@ -1,58 +1,126 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# LuxStay PMS
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Sistema de gestión hotelera para tres sucursales. Un solo proyecto Laravel concentra el portal público, las operaciones del personal y la PWA; MySQL es la base de datos compartida.
 
-## About Laravel
+## Arquitectura y accesos
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- `/`: portal público para consultar disponibilidad y enviar pre-reservas. No cobra en línea.
+- `/login`: acceso del personal.
+- PWA adaptable a escritorio y móvil. La vista operativa se actualiza mediante polling cada 15 segundos; el service worker conserva recursos estáticos y la pantalla offline, no páginas con datos privados.
+- La disponibilidad comercial se calcula por sucursal y rango de fechas. El estado físico de una habitación (`limpia`, `sucia`, `en_limpieza`, `mantenimiento`) es independiente.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+### Roles
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+| Rol | Alcance |
+| --- | --- |
+| Admin | Acceso a todas las sucursales, usuarios, tarifas, tasas de cambio, reportes y resolución de incidencias. |
+| Recepción | Reservas, pre-reservas, cobros y estancias de su sucursal; puede consultar housekeeping, pero no modificar tareas de limpieza. |
+| Limpieza | Cola y reportes de habitaciones de su sucursal; no puede gestionar reservas, cobros, tarifas ni administración. |
 
-## Learning Laravel
+La autorización y el aislamiento por sucursal se validan en servidor, además de ocultar acciones en la interfaz.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+## Reglas operativas
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+- Huéspedes, acompañantes, solicitudes de habitaciones, servicios extra, pagos y estancias están normalizados en relaciones independientes.
+- Titular y acompañantes cuentan para la capacidad; el servidor valida solapamientos por documento y calcula precios y totales.
+- Los pagos guardan moneda, importe original, tasa aplicada e importe convertido a PEN. La tasa y el total enviados por el cliente no son fuentes confiables.
+- Una cancelación con **24 horas o más** genera reembolso pendiente del 50% de lo cobrado; con menos de 24 horas o no-show se registra la penalidad para completar el 100% del total.
+- Las reubicaciones conservan las estancias anteriores y ponen la habitación afectada en mantenimiento.
+- El check-out se rechaza mientras una habitación activa tenga una alerta o una incidencia de avería pendiente; debe resolverse primero.
+- Los gráficos de ingresos se basan en movimientos registrados, netos de reembolsos, consolidados en PEN. El precio cotizado de una reserva no se considera un cobro.
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+## Desarrollo local en Windows
 
-## Agentic Development
+### Requisitos
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+- PHP 8.3 o superior y Composer.
+- MySQL compatible con la migración del proyecto.
+- Node.js y npm.
 
-```bash
-composer require laravel/boost --dev
+### Clonar o actualizar
 
-php artisan boost:install
+Clonar la rama de trabajo:
+
+```powershell
+git clone --branch develop https://github.com/Benyirika/Proyecto_Ingenieria_Web.git luxstay-pms
+Set-Location luxstay-pms
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+Para actualizar un clon existente:
 
-## Contributing
+```powershell
+git switch develop
+git pull --ff-only origin develop
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+### Instalar y configurar
 
-## Code of Conduct
+```powershell
+composer install
+npm ci
+if (-not (Test-Path .env)) { Copy-Item .env.example .env }
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+Edita `.env` localmente; no lo subas a GitHub. Usa una base de datos local **nueva y exclusiva para desarrollo**, por ejemplo `luxstay_pms_dev`. Configura `DB_CONNECTION=mysql`, `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME` y `DB_PASSWORD`. Conserva `APP_DEBUG=false`. Para crear el administrador inicial configura tanto `LUXSTAY_ADMIN_EMAIL` como `LUXSTAY_ADMIN_PASSWORD`; la contraseña debe tener al menos 12 caracteres. No reutilices credenciales de producción.
 
-## Security Vulnerabilities
+Genera la clave de la aplicación:
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+```powershell
+php artisan key:generate
+```
 
-## License
+En una base de desarrollo recién creada, prepara esquema y catálogos:
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+```powershell
+php artisan migrate --seed
+```
+
+Este comando aplica todas las migraciones pendientes. **No lo uses con una base legacy o con datos que deban conservarse**: la migración final elimina columnas antiguas. No uses `migrate:fresh`, `migrate:refresh` ni `migrate:rollback` sobre datos compartidos.
+
+### Ejecutar
+
+En terminales separadas:
+
+```powershell
+php artisan serve --host=127.0.0.1 --port=8000
+```
+
+```powershell
+npm run dev
+```
+
+Abre `http://127.0.0.1:8000/` para el portal y `http://127.0.0.1:8000/login` para el personal. Para compilar assets de entrega:
+
+```powershell
+npm run build
+```
+
+Para ejecutar pruebas:
+
+```powershell
+php artisan test
+```
+
+La suite automatizada usa SQLite en memoria; no sustituye el ensayo de migraciones sobre una copia de MySQL.
+
+## Migraciones sobre una base legacy
+
+Las migraciones normalizadoras son de avance y la eliminación legacy no tiene rollback seguro. Antes de tocar una base existente:
+
+1. Genera un dump MySQL verificable y restáuralo en una base aislada.
+2. Apunta una terminal dedicada exclusivamente a esa copia.
+3. Ejecuta **solo** la expansión:
+
+   ```powershell
+   php artisan config:clear
+   $env:DB_CONNECTION = 'mysql'
+   $env:DB_DATABASE = 'luxstay_pms_migration_copy'
+   $env:DB_URL = ''
+   php artisan migrate --database=mysql --path=database/migrations/2026_11_23_012628_create_normalized_pms_tables.php --force
+   ```
+
+4. Verifica los conteos de reservas, huéspedes, habitaciones solicitadas, estancias, pagos y datos legacy; confirma que ningún `total_price` antiguo se haya tratado como cobro.
+5. Valida flujos y reportes sobre la copia. Solo con respaldo probado, revisión y autorización explícita se ensaya allí la migración `2026_11_23_012834_drop_legacy_reservation_and_room_columns.php`.
+6. La migración destructiva no se aplica a una base real hasta completar la revisión anterior y aprobar una ventana de cambio.
+
+No ejecutes `php artisan migrate` sin limitar el alcance durante esta transición: aplicaría también cualquier migración destructiva pendiente.

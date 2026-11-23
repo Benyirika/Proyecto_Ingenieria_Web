@@ -2,54 +2,66 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\View\View;
 
 class AuthController extends Controller
 {
-    public function showLogin()
+    public function showLogin(): View|RedirectResponse
     {
         if (Auth::check()) {
             return $this->redirectByRole(Auth::user());
         }
+
         return view('auth.login');
     }
 
-    public function login(Request $request)
+    public function login(Request $request): RedirectResponse
     {
         $credentials = $request->validate([
             'email' => ['required', 'email'],
-            'password' => ['required', 'min:6'],
-        ], [
-            'email.required' => 'Debe ingresar su correo corporativo.',
-            'email.email' => 'El formato del correo no es válido.',
-            'password.required' => 'Debe ingresar su contraseña.',
-            'password.min' => 'La contraseña debe tener al menos 6 caracteres.',
+            'password' => ['required', 'string'],
         ]);
 
-        if (Auth::attempt($credentials)) {
+        if (Auth::attempt([...$credentials, 'is_active' => true])) {
+            $user = Auth::user()->load('branch');
+
+            if (! $user->isAdmin() && (! $user->branch_id || ! $user->branch?->is_active)) {
+                Auth::logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+
+                return back()->withErrors([
+                    'email' => 'No se pudo validar el acceso del usuario.',
+                ])->onlyInput('email');
+            }
+
             $request->session()->regenerate();
-            return $this->redirectByRole(Auth::user());
+
+            return $this->redirectByRole($user);
         }
 
         return back()->withErrors([
-            'email' => 'Las credenciales ingresadas no coinciden con nuestros registros en la base de datos.',
+            'email' => 'No se pudo validar el acceso del usuario.',
         ])->onlyInput('email');
     }
 
-    private function redirectByRole($user)
-    {
-        if ($user->role === 'limpieza') {
-            return redirect()->route('housekeeping.index');
-        }
-        return redirect()->route('dashboard');
-    }
-
-    public function logout(Request $request)
+    public function logout(Request $request): RedirectResponse
     {
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
+
         return redirect()->route('login');
+    }
+
+    private function redirectByRole(User $user): RedirectResponse
+    {
+        return $user->role === 'limpieza'
+            ? redirect()->route('housekeeping.index')
+            : redirect()->route('dashboard');
     }
 }

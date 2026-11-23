@@ -3,15 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LuxStay PMS - Sistema de Gestión Hotelera</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>body { font-family: 'Inter', sans-serif; }</style>
+    <meta name="theme-color" content="#0b192c">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <link rel="manifest" href="{{ asset('manifest.webmanifest') }}">
+    <link rel="icon" href="{{ asset('icons/luxstay.svg') }}" type="image/svg+xml">
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <title>@yield('title', 'LuxStay PMS')</title>
 </head>
-<body class="bg-slate-100 text-slate-800 min-h-screen flex">
+<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col md:flex-row">
 
-    <!-- Sidebar Unificado LuxStay PMS -->
-    <aside class="w-64 bg-[#0b192c] text-white flex flex-col justify-between shrink-0 shadow-xl">
+    <!-- Sidebar Unificado LuxStay PMS (Responsivo: se apila en móvil y se fija a la izquierda en escritorio) -->
+    <aside class="w-full md:w-64 bg-[#0b192c] text-white flex flex-col justify-between shrink-0 shadow-xl md:min-h-screen">
         <div>
             <div class="p-6 border-b border-slate-800 flex items-center gap-3">
                 <div class="bg-blue-600 p-2 rounded-lg font-bold text-xl">🏢</div>
@@ -36,6 +38,12 @@
                     <a href="{{ route('reservations.create', ['branch_id' => request('branch_id')]) }}"
                        class="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition {{ request()->routeIs('reservations.create') ? 'bg-blue-600 text-white' : 'text-slate-300 hover:bg-slate-800' }}">
                         <span>🛎️</span> Nuevo Check-in
+                    </a>
+                @endif
+                @if(auth()->user()->isAdmin())
+                    <a href="{{ route('admin.index') }}"
+                       class="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition {{ request()->routeIs('admin.*') ? 'bg-blue-600 text-white' : 'text-slate-300 hover:bg-slate-800' }}">
+                        <span>⚙️</span> Administración
                     </a>
                 @endif
 
@@ -63,24 +71,24 @@
     </aside>
 
     <!-- Contenido Principal -->
-    <div class="flex-1 flex flex-col">
+    <div class="flex-1 flex flex-col min-w-0 overflow-y-auto">
         <!-- Topbar: Selector de los 3 locales EXCLUSIVO para el Master Admin -->
-        <header class="bg-white border-b border-slate-200 px-8 py-4 flex flex-wrap items-center justify-between gap-4">
+        <header class="bg-white border-b border-slate-200 px-6 sm:px-8 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
                 <h2 class="text-xl font-bold text-slate-900">@yield('title', 'Panel Operativo')</h2>
                 <p class="text-xs text-slate-500">@yield('subtitle', 'Datos sincronizados en tiempo real con MySQL')</p>
             </div>
 
             @if(auth()->user()->isAdmin())
-                <div class="flex items-center gap-2 bg-slate-100 p-1.5 rounded-xl border border-slate-200">
+                <div class="flex flex-wrap items-center gap-2 bg-slate-100 p-1.5 rounded-xl border border-slate-200 w-full sm:w-auto overflow-x-auto">
                     <span class="text-xs font-bold text-slate-600 px-2">Vista Master (3 Locales):</span>
                     <a href="{{ request()->fullUrlWithQuery(['branch_id' => null]) }}"
-                       class="px-3 py-1.5 rounded-lg text-xs font-semibold transition {{ !request('branch_id') ? 'bg-[#0b192c] text-white shadow' : 'text-slate-600 hover:bg-white' }}">
+                       class="px-3 py-1.5 rounded-lg text-xs font-semibold transition whitespace-nowrap {{ !request('branch_id') ? 'bg-[#0b192c] text-white shadow' : 'text-slate-600 hover:bg-white' }}">
                         🌐 Consolidado (3 Sedes)
                     </a>
-                    @foreach(\App\Models\Branch::all() as $b)
+                    @foreach($branches ?? collect() as $b)
                         <a href="{{ request()->fullUrlWithQuery(['branch_id' => $b->id]) }}"
-                           class="px-3 py-1.5 rounded-lg text-xs font-semibold transition {{ request('branch_id') == $b->id ? 'bg-[#0b192c] text-white shadow' : 'text-slate-600 hover:bg-white' }}">
+                           class="px-3 py-1.5 rounded-lg text-xs font-semibold transition whitespace-nowrap {{ request('branch_id') == $b->id ? 'bg-[#0b192c] text-white shadow' : 'text-slate-600 hover:bg-white' }}">
                             🏨 {{ $b->name }}
                         </a>
                     @endforeach
@@ -92,15 +100,15 @@
             @endif
         </header>
 
-        <main class="p-8 flex-1 overflow-y-auto">
+        <main class="p-4 sm:p-6 lg:p-8 flex-1">
             @if(session('success'))
-                <div class="mb-6 p-4 rounded-xl bg-emerald-50 border border-emerald-300 text-emerald-800 text-sm font-medium flex items-center justify-between">
+                <div class="mb-6 p-4 rounded-xl bg-emerald-50 border border-emerald-300 text-emerald-800 text-sm font-medium flex items-center justify-between shadow-sm">
                     <span>✅ {{ session('success') }}</span>
                 </div>
             @endif
 
             @if($errors->any())
-                <div class="mb-6 p-4 rounded-xl bg-red-50 border border-red-300 text-red-800 text-sm">
+                <div class="mb-6 p-4 rounded-xl bg-red-50 border border-red-300 text-red-800 text-sm shadow-sm">
                     <p class="font-bold mb-1">⚠️ Se detectaron errores de validación en el servidor:</p>
                     <ul class="list-disc list-inside space-y-0.5">
                         @foreach($errors->all() as $error)
